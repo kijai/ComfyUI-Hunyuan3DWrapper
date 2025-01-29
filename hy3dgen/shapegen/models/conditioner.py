@@ -32,6 +32,57 @@ from transformers import (
     Dinov2Config,
 )
 
+def split_tiles(embeds, num_split):
+    B, C, H, W = embeds.shape
+    out = []
+    for x in embeds:  # x shape: [C, H, W]
+        x = x.unsqueeze(0)  # shape: [1, C, H, W]
+        h, w = H // num_split, W // num_split
+        x_split = torch.cat([x[:, :, i*h:(i+1)*h, j*w:(j+1)*w] 
+                           for i in range(num_split) 
+                           for j in range(num_split)], dim=0)    
+        out.append(x_split)
+        print("x_split", x_split.shape)
+    
+    x_split = torch.stack(out, dim=0)  # Final shape: [B, num_split*num_split, C, h, w]
+    
+    return x_split
+
+# matteo's ipadapter tiling code
+def merge_hiddenstates(x, tiles):
+    chunk_size = tiles*tiles
+    x = x.split(chunk_size)
+
+    out = []
+    for embeds in x:
+        print("embeds", embeds.shape)
+        num_tiles = embeds.shape[0]
+        tile_size = int((embeds.shape[1]-1) ** 0.5)
+        grid_size = int(num_tiles ** 0.5)
+
+        # Extract class tokens
+        class_tokens = embeds[:, 0, :]  # Save class tokens: [num_tiles, embeds[-1]]
+        avg_class_token = class_tokens.mean(dim=0, keepdim=True).unsqueeze(0)  # Average token, shape: [1, 1, embeds[-1]]
+
+        patch_embeds = embeds[:, 1:, :]  # Shape: [num_tiles, tile_size^2, embeds[-1]]
+        reshaped = patch_embeds.reshape(grid_size, grid_size, tile_size, tile_size, embeds.shape[-1])
+
+        merged = torch.cat([torch.cat([reshaped[i, j] for j in range(grid_size)], dim=1) 
+                            for i in range(grid_size)], dim=0)
+        
+        merged = merged.unsqueeze(0)  # Shape: [1, grid_size*tile_size, grid_size*tile_size, embeds[-1]]
+        
+        # Pool to original size
+        pooled = torch.nn.functional.adaptive_avg_pool2d(merged.permute(0, 3, 1, 2), (tile_size, tile_size)).permute(0, 2, 3, 1)
+        flattened = pooled.reshape(1, tile_size*tile_size, embeds.shape[-1])
+        
+        # Add back the class token
+        with_class = torch.cat([avg_class_token, flattened], dim=1)  # Shape: original shape
+        out.append(with_class)
+    
+    out = torch.cat(out, dim=0)
+
+    return out
 
 class ImageEncoder(nn.Module):
     def __init__(
@@ -67,7 +118,7 @@ class ImageEncoder(nn.Module):
             ]
         )
 
-    def forward(self, image, mask=None, value_range=(-1, 1)):
+    def forward(self, image, mask=None, value_range=(-1, 1), tiles = 1, ratio = 0.8):
         if value_range is not None:
             low, high = value_range
             image = (image - low) / (high - low)
@@ -78,12 +129,25 @@ class ImageEncoder(nn.Module):
             mask = mask.to(image)
             image = image * mask
 
-        inputs = self.transform(image)
-        outputs = self.model(inputs)
-
-        last_hidden_state = outputs.last_hidden_state
+        image = self.transform(image)
+        
+        last_hidden_state = self.model(image).last_hidden_state
+    
+        if tiles > 1:
+            hidden_state = None
+            image_split = split_tiles(image, tiles)
+            for i in image_split:
+                i = self.transform(i)
+                if hidden_state is None:
+                    hidden_state = self.model(i).last_hidden_state
+                else:
+                    hidden_state = torch.cat([hidden_state, self.model(i).last_hidden_state], dim=0)
+            hidden_state = merge_hiddenstates(hidden_state, tiles)
+            last_hidden_state = last_hidden_state*ratio + hidden_state * (1-ratio)
+        
         if not self.use_cls_token:
             last_hidden_state = last_hidden_state[:, 1:, :]
+        
 
         return last_hidden_state
 
@@ -157,9 +221,9 @@ class SingleImageEncoder(nn.Module):
         super().__init__()
         self.main_image_encoder = build_image_encoder(main_image_encoder)
 
-    def forward(self, image, mask=None):
+    def forward(self, image, mask=None, tiles = 1, ratio = 0.8):
         outputs = {
-            'main': self.main_image_encoder(image, mask=mask),
+            'main': self.main_image_encoder(image, mask=mask, tiles = tiles, ratio = ratio),
         }
         return outputs
 

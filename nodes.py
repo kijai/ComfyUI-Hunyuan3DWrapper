@@ -215,6 +215,7 @@ class DownloadAndLoadHy3DPaintModel:
             snapshot_download(
                 repo_id="tencent/Hunyuan3D-2",
                 allow_patterns=[f"*{model}*"],
+                ignore_patterns=["*diffusion_pytorch_model.bin"],
                 local_dir=download_path,
                 local_dir_use_symlinks=False,
             )
@@ -683,6 +684,8 @@ class Hy3DGenerateMesh:
             },
             "optional": {
                 "mask": ("MASK", ),
+                "tiles": ("INT", {"default": 1, "min": 1, "max": 10000000, "step": 1}),
+                "ratio": ("FLOAT", {"default": 0.8, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
         }
 
@@ -691,7 +694,7 @@ class Hy3DGenerateMesh:
     FUNCTION = "process"
     CATEGORY = "Hunyuan3DWrapper"
 
-    def process(self, pipeline, image, steps, guidance_scale, octree_resolution, seed, mask=None):
+    def process(self, pipeline, image, steps, guidance_scale, octree_resolution, seed, mask=None, tiles=1, ratio=0.8):
 
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
@@ -715,6 +718,8 @@ class Hy3DGenerateMesh:
             num_inference_steps=steps, 
             mc_algo='mc',
             guidance_scale=guidance_scale,
+            tiles=tiles,
+            ratio=ratio,
             octree_resolution=octree_resolution,
             generator=torch.manual_seed(seed))[0]
         

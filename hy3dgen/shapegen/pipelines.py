@@ -304,10 +304,10 @@ class Hunyuan3DDiTPipeline:
             self.model.to(dtype=dtype)
             self.conditioner.to(dtype=dtype)
 
-    def encode_cond(self, image, mask, do_classifier_free_guidance, dual_guidance):
+    def encode_cond(self, image, mask, do_classifier_free_guidance, dual_guidance, tiles=1, ratio=0.8):
         self.conditioner.to(self.main_device)
         bsz = image.shape[0]
-        cond = self.conditioner(image=image, mask=mask)
+        cond = self.conditioner(image=image, mask=mask, tiles=tiles, ratio=ratio)
 
         if do_classifier_free_guidance:
             un_cond = self.conditioner.unconditional_embedding(bsz)
@@ -565,6 +565,8 @@ class Hunyuan3DDiTFlowMatchingPipeline(Hunyuan3DDiTPipeline):
         num_chunks=8000,
         output_type: Optional[str] = "trimesh",
         enable_pbar=True,
+        tiles=1,
+        ratio=0.8,
         **kwargs,
     ) -> List[List[trimesh.Trimesh]]:
         callback = kwargs.pop("callback", None)
@@ -584,6 +586,8 @@ class Hunyuan3DDiTFlowMatchingPipeline(Hunyuan3DDiTPipeline):
             mask=mask,
             do_classifier_free_guidance=do_classifier_free_guidance,
             dual_guidance=False,
+            tiles=tiles,
+            ratio=ratio,
         )
         batch_size = image.shape[0]
 
