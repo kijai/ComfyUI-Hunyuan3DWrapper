@@ -1565,7 +1565,7 @@ class Hy3DBPT:
             "required": {
                 "trimesh": ("TRIMESH",),
                 "enable_bpt": ("BOOLEAN", {"default": True}),
-                "seed": ("INT", {"default": 42, "min": 0, "max": 0xffffffffffffffff}),
+                "seed": ("INT", {"default": 42, "min": 0, "max": 0xffffffff}),
                 "temperature": ("FLOAT", {"default": 0.5}),
                 "pc_num": ("INT", {"default": 4096, "min": 1024, "max": 8192, "step": 1024}),
                 "samples": ("INT", {"default": 100000})

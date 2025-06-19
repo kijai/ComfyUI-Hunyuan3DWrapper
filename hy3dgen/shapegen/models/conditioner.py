@@ -32,7 +32,8 @@ from transformers import (
     Dinov2Model,
     Dinov2Config,
 )
-from ....utils import log
+import logging
+log = logging.getLogger(__name__)
 
 def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
     """
