@@ -7,9 +7,6 @@
 ![ComfyUI-Hunyuan3D-2](https://github.com/user-attachments/assets/a5fcd4e1-f9d1-4c21-b299-c9af85dee163)
 
 [![Python](https://img.shields.io/badge/python-3.12+-blue)](https://www.python.org/downloads/)
-[![PyPI](https://img.shields.io/pypi/v/comfyui-hunyuan3d-wrapper?color=green)](https://pypi.org/project/comfyui-hunyuan3d-wrapper/)
-[![License](https://img.shields.io/github/license/your_repo/comfyui-hunyuan3d-wrapper?color=blue)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/your_repo/comfyui-hunyuan3d-wrapper/build.yml?branch=main)](https://github.com/your_repo/comfyui-hunyuan3d-wrapper/actions)
 
 ---
 
