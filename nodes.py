@@ -1297,8 +1297,8 @@ class Hy3DGenerateMeshMultiView():
         view_dict = {
             'front': front,
             'left': left,
-            'right': right,
-            'back': back
+            'back': back,
+            'right': right
         }
 
         if scheduler == "FlowMatchEulerDiscreteScheduler":
