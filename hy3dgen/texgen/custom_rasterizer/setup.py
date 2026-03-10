@@ -17,7 +17,10 @@ custom_rasterizer_module = CUDAExtension('custom_rasterizer_kernel', [
     'lib/custom_rasterizer_kernel/rasterizer.cpp',
     'lib/custom_rasterizer_kernel/grid_neighbor.cpp',
     'lib/custom_rasterizer_kernel/rasterizer_gpu.cu',
-])
+], extra_compile_args={
+    'cxx': [],
+    'nvcc': ['-Xcompiler', '/Zc:preprocessor'],
+})
 
 setup(
     packages=find_packages(),

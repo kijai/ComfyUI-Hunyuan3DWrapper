@@ -1,3 +1,4 @@
+#include <torch/extension.h>
 #include "rasterizer.h"
 
 void rasterizeTriangleCPU(int idx, float* vt0, float* vt1, float* vt2, int width, int height, INT64* zbuffer, float* d, float occlusion_truncation) {

@@ -1,10 +1,10 @@
 #ifndef RASTERIZER_H_
 #define RASTERIZER_H_
 
-#include <torch/extension.h>
+#include <torch/types.h>
 #include <vector>
 #include <ATen/ATen.h>
-#include <ATen/cuda/CUDAContext.h> // For CUDA context
+#include <ATen/cuda/CUDAContext.h>
 #include <cstdint>
 #define INT64 uint64_t
 #define MAXINT 2147483647
